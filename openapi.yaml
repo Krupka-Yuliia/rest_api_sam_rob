@@ -1,0 +1,333 @@
+openapi: 3.0.3
+info:
+  title: FastAPI
+  version: 0.1.0
+paths:
+  /v1/api/:
+    get:
+      summary: Root
+      operationId: getRoot
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+
+  /v1/api/books:
+    get:
+      summary: Get Books
+      operationId: listBooks
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                title: BookList
+                items:
+                  $ref: '#/components/schemas/Book'
+      security:
+        - OAuth2PasswordBearer: []
+    post:
+      summary: Create Book
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreate'
+      responses:
+        '201':
+          description: Book Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - OAuth2PasswordBearer: []
+
+  /v1/api/books/{book_id}:
+    get:
+      summary: Get Book
+      operationId: getBookById
+      security:
+        - OAuth2PasswordBearer: []
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Book ID
+      responses:
+        '200':
+          description: Book Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      summary: Delete Book
+      operationId: deleteBookById
+      security:
+        - OAuth2PasswordBearer: []
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Book ID
+      responses:
+        '204':
+          description: Book Deleted
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /v1/api/auth/register:
+    post:
+      tags:
+        - authentication
+      summary: Register
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: Registration Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /v1/api/auth/login:
+    post:
+      tags:
+        - authentication
+      summary: Login
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BodyLogin'
+      responses:
+        '200':
+          description: Login Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /v1/api/auth/refresh:
+    post:
+      tags:
+        - authentication
+      summary: Refresh Token Endpoint
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token Refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+components:
+  schemas:
+    BodyLogin:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        grant_type:
+          type: string
+          enum: [password]
+        username:
+          type: string
+        password:
+          type: string
+        scope:
+          type: string
+          default: ''
+        client_id:
+          type: string
+          nullable: true
+        client_secret:
+          type: string
+          nullable: true
+
+    Book:
+      type: object
+      required:
+        - id
+        - title
+        - author
+        - publisher
+        - year
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          maxLength: 200
+        author:
+          type: string
+          maxLength: 200
+        publisher:
+          type: string
+          maxLength: 200
+        year:
+          type: integer
+          minimum: 1501
+          maximum: 2025
+
+    BookCreate:
+      type: object
+      required:
+        - title
+        - author
+        - publisher
+        - year
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        author:
+          type: string
+          maxLength: 200
+        publisher:
+          type: string
+          maxLength: 200
+        year:
+          type: integer
+          minimum: 1501
+          maximum: 2025
+
+    Token:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+
+    UserCreate:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    UserDTO:
+      type: object
+      required:
+        - id
+        - username
+        - email
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+
+    HTTPValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      properties:
+        loc:
+          type: array
+          items:
+            type: string
+        msg:
+          type: string
+        type:
+          type: string
+
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: /v1/api/auth/login
+          scopes: {}
